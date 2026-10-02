@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "topic": {
+    "id": "cap",
+    "title": "CAP Theorem",
+    "domain": "Distributed Systems Foundations",
+    "prerequisites": [],
+    "summary": "Why a distributed system must choose between consistency and availability the moment its network splits."
+  },
+  "cards": [
+    {
+      "id": "CAP-01",
+      "ordinal": 1,
+      "title": "The three letters, precisely",
+      "audience": "shared",
+      "body": "CAP stands for Consistency, Availability, Partition tolerance, but the definitions are stricter than everyday usage. Consistency means linearizability: every read returns the most recent write, as if there were one copy of the data. Availability means every request to a non-failed node gets a non-error response, eventually. Partition tolerance means the system keeps operating when messages between nodes are lost or delayed. Most confusion about CAP comes from using looser meanings of these words.",
+      "seniorNote": "CAP's \"consistency\" is not ACID's consistency, and its \"availability\" is not uptime.",
+      "volatility": null,
+      "diagram": null
+    },
+    {
+      "id": "CAP-02",
+      "ordinal": 2,
+      "title": "Partitions are not optional",
+      "audience": "shared",
+      "body": "A partition is any moment when two nodes that should communicate cannot: a cut cable, a slow switch, a GC pause long enough to look like death. Over a long enough window, every distributed system experiences one. That is why P is not really a choice. You cannot build a network that never drops messages, so the only real decision CAP leaves you is what to do while the partition lasts: keep answering, or keep agreeing.",
+      "seniorNote": "\"Pick two\" is a junior framing. Seniors say \"C or A, during a partition.\"",
+      "volatility": null,
+      "diagram": null
+    },
+    {
+      "id": "CAP-03",
+      "ordinal": 3,
+      "title": "Inside a partition",
+      "audience": "shared",
+      "body": "Picture two replicas, A and B, that can no longer reach each other. A client writes to A. Now B receives a read. B has two options. Answer with its stale copy, staying available but returning something inconsistent. Or refuse until it can confirm with A, staying consistent but unavailable. There is no third option, because confirming requires the message that the partition is dropping. Every CAP trade-off reduces to this single moment.",
+      "seniorNote": "If you can draw this on a whiteboard, you can derive the rest of CAP from scratch.",
+      "volatility": null,
+      "diagram": {
+        "type": "svg",
+        "alt": "Two replicas A and B with a broken link between them; a client writes to A and reads from B.",
+        "svg": "<svg viewBox=\"0 0 320 170\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" font-family=\"sans-serif\" font-size=\"13\"><rect x=\"70\" y=\"55\" width=\"70\" height=\"50\" rx=\"8\"/><text x=\"105\" y=\"85\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-weight=\"bold\">A</text><rect x=\"180\" y=\"55\" width=\"70\" height=\"50\" rx=\"8\"/><text x=\"215\" y=\"85\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-weight=\"bold\">B</text><line x1=\"140\" y1=\"80\" x2=\"180\" y2=\"80\" stroke-dasharray=\"5 4\"/><line x1=\"153\" y1=\"72\" x2=\"167\" y2=\"88\" stroke-width=\"2.5\"/><line x1=\"167\" y1=\"72\" x2=\"153\" y2=\"88\" stroke-width=\"2.5\"/><text x=\"160\" y=\"50\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">partition</text><circle cx=\"25\" cy=\"80\" r=\"12\"/><line x1=\"37\" y1=\"80\" x2=\"66\" y2=\"80\"/><polygon points=\"66,76 70,80 66,84\" fill=\"currentColor\" stroke=\"none\"/><text x=\"52\" y=\"70\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">write</text><text x=\"25\" y=\"110\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">client</text><circle cx=\"295\" cy=\"80\" r=\"12\"/><line x1=\"283\" y1=\"80\" x2=\"254\" y2=\"80\"/><polygon points=\"254,76 250,80 254,84\" fill=\"currentColor\" stroke=\"none\"/><text x=\"268\" y=\"70\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">read?</text><text x=\"295\" y=\"110\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">client</text><text x=\"215\" y=\"140\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">B: answer stale, or refuse?</text></svg>"
+      }
+    },
+    {
+      "id": "CAP-04",
+      "ordinal": 4,
+      "title": "Choosing C: what CP systems do",
+      "audience": "shared",
+      "body": "CP systems refuse to serve when they cannot guarantee agreement. ZooKeeper and etcd are the classic examples: they require a majority (quorum) of nodes to acknowledge a write, and a minority side of a partition simply stops accepting writes. That is the point. They are used for leader election, locks, and configuration, where a wrong answer is far worse than no answer. The cost is that a partition takes part of the cluster offline by design.",
+      "seniorNote": "Coordination state goes in a CP store. Almost nothing else should.",
+      "volatility": null,
+      "diagram": null
+    },
+    {
+      "id": "CAP-05",
+      "ordinal": 5,
+      "title": "Choosing A: what AP systems do",
+      "audience": "shared",
+      "body": "AP systems keep accepting reads and writes on both sides of a partition and reconcile later. Cassandra and DynamoDB-style stores are the standard examples. The price is divergence: two replicas can hold conflicting versions of the same key. Something must resolve that, usually last-write-wins by timestamp, which silently discards one write, or vector clocks and application-level merge, which is correct but expensive. Choose AP when a stale or merged answer is acceptable, like shopping carts, feeds, or metrics.",
+      "seniorNote": "Last-write-wins loses data quietly. Ask \"which write wins, and would anyone notice?\"",
+      "volatility": null,
+      "diagram": null
+    },
+    {
+      "id": "CAP-06",
+      "ordinal": 6,
+      "title": "The \"pick two\" myth",
+      "audience": "shared",
+      "body": "CAP is often taught as \"pick any two of three.\" That is wrong in two ways. First, you cannot drop P, so the only pair you choose is C or A. Second, the choice only applies during a partition; when the network is healthy, a well-designed system delivers both consistency and availability. Labelling a database \"CP\" or \"AP\" describes its behavior in one failure scenario, not its everyday character. Ask \"what does it do when split?\" instead.",
+      "seniorNote": "Labels end conversations. Mechanisms start them.",
+      "volatility": null,
+      "diagram": null
+    },
+    {
+      "id": "CAP-07",
+      "ordinal": 7,
+      "title": "PACELC: the trade-off when nothing is broken",
+      "audience": "shared",
+      "body": "Partitions are rare; latency is constant. PACELC extends CAP: if Partitioned, choose Availability or Consistency; Else, choose Latency or Consistency. Even on a healthy network, a strongly consistent write must wait for replicas to confirm, adding round trips. An eventually consistent write can return immediately. So the real daily trade-off most systems make is latency versus consistency, and CAP's partition case is the edge. DynamoDB's eventual-vs-strong read option is PACELC exposed as an API flag.",
+      "seniorNote": "Most production tuning is the E-L-C half, not the P-A-C half.",
+      "volatility": { "label": "Product API detail", "lastVerified": "2026-09" },
+      "diagram": null
+    },
+    {
+      "id": "CAP-08",
+      "ordinal": 8,
+      "title": "Consistency is a dial, not a switch",
+      "audience": "shared",
+      "body": "Real systems rarely sit at a pure C or A extreme. Cassandra lets you pick a consistency level per query: ONE, QUORUM, ALL. With replication factor 3, reading and writing at QUORUM (2 nodes each) guarantees overlap, so reads see the latest write. Reading at ONE is faster but may be stale. The same cluster is therefore \"CP-ish\" for one query and \"AP-ish\" for the next. The right question is per operation, not per database.",
+      "seniorNote": "R + W > N is a formula worth memorising; it explains most tunable-consistency stores.",
+      "volatility": null,
+      "diagram": {
+        "type": "svg",
+        "alt": "Three replicas; a quorum write touches R1 and R2, a quorum read touches R2 and R3, so R2 is the overlap.",
+        "svg": "<svg viewBox=\"0 0 320 170\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" font-family=\"sans-serif\" font-size=\"13\"><circle cx=\"80\" cy=\"85\" r=\"22\"/><text x=\"80\" y=\"90\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-weight=\"bold\">R1</text><circle cx=\"160\" cy=\"85\" r=\"22\" stroke-width=\"3.5\"/><text x=\"160\" y=\"90\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-weight=\"bold\">R2</text><circle cx=\"240\" cy=\"85\" r=\"22\"/><text x=\"240\" y=\"90\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-weight=\"bold\">R3</text><path d=\"M55 50 L55 40 L185 40 L185 50\" /><text x=\"120\" y=\"30\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">write QUORUM (W=2)</text><path d=\"M135 120 L135 130 L265 130 L265 120\" /><text x=\"200\" y=\"148\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">read QUORUM (R=2)</text><text x=\"160\" y=\"165\" text-anchor=\"middle\" fill=\"currentColor\" stroke=\"none\" font-size=\"11\">R2 is in both: R + W &gt; N</text></svg>"
+      }
+    },
+    {
+      "id": "CAP-09",
+      "ordinal": 9,
+      "title": "The interview follow-up",
+      "audience": "interview",
+      "body": "\"Is MongoDB CP or AP?\" is a trap. The senior answer refuses the label and describes the mechanism: by default writes go to a primary, reads can be served from the primary (consistent) or secondaries (possibly stale), and during a partition the minority side cannot elect a primary, so it stops accepting writes. That is CP behavior with tunable read consistency. Answering with a mechanism instead of a letter separates candidates who memorised CAP from those who understand it.",
+      "seniorNote": "Every \"is X CP or AP\" question is really \"do you know how X replicates.\"",
+      "volatility": { "label": "Product defaults", "lastVerified": "2026-09" },
+      "diagram": null
+    }
+  ],
+  "quiz": [
+    {
+      "id": "Q-CAP-01",
+      "prerequisites": ["CAP-02", "CAP-03"],
+      "prompt": "During a network partition, a replica that cannot reach its peers receives a read. Which is true?",
+      "options": [
+        { "id": "a", "text": "It can stay both consistent and available if it retries fast enough" },
+        { "id": "b", "text": "It must choose between answering with possibly stale data or refusing" },
+        { "id": "c", "text": "It should always refuse, because stale data is never acceptable" },
+        { "id": "d", "text": "Partitions are rare enough that the case doesn't need handling" }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Confirming freshness needs the messages the partition is dropping, so both properties can't hold at once. Which one to sacrifice depends on the system's purpose.",
+      "reviewCards": ["CAP-03"]
+    },
+    {
+      "id": "Q-CAP-02",
+      "prerequisites": ["CAP-04", "CAP-05"],
+      "prompt": "You are storing which node currently holds a distributed lock. Which store fits best?",
+      "options": [
+        { "id": "a", "text": "An AP store, because lock lookups must always be fast" },
+        { "id": "b", "text": "A CP store like etcd, because a wrong answer is worse than no answer" },
+        { "id": "c", "text": "Either, as long as the replication factor is 3" },
+        { "id": "d", "text": "An AP store with last-write-wins to resolve conflicts" }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Two nodes both believing they hold the lock is a correctness failure. CP stores refuse to answer rather than risk that, which is exactly what coordination state needs.",
+      "reviewCards": ["CAP-04"]
+    },
+    {
+      "id": "Q-CAP-03",
+      "prerequisites": ["CAP-08"],
+      "prompt": "Replication factor is 3. Which read/write combination guarantees a read sees the latest write?",
+      "options": [
+        { "id": "a", "text": "W=1, R=1" },
+        { "id": "b", "text": "W=2, R=1" },
+        { "id": "c", "text": "W=2, R=2" },
+        { "id": "d", "text": "W=1, R=2" }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Overlap requires R + W > N. Only 2 + 2 = 4 exceeds 3; every other option can read from a replica the write never reached.",
+      "reviewCards": ["CAP-08"]
+    }
+  ]
+}
